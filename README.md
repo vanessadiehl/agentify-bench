@@ -4,7 +4,7 @@ Adapted from [AgentBeats](https://github.com/agentbeats/agentbeats)
 
 ## Overview
 
-This repo is a playground for **AgentBeats-style green agents** built by **Team Agentify**.
+This repo is a playground for **AgentBeats-style green agents** built by **Team Agentify Bennch**.
 
 Goal: Build and compare **multi-agent benchmarks** that focus on
 - **Domain-adaptive language understanding** (mapping concepts across CRM, Legal, Support, etc.)
