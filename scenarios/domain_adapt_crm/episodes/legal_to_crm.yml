@@ -1,0 +1,44 @@
+id: "legal_to_crm_001"
+title: "Legal → CRM: Construction defect case"
+domains:
+  source: "Legal_Construction"
+  target: "CRM"
+
+task:
+  user_message: |
+    Our client ACME Construction is filing a defect claim against subcontractor
+    Skyline Drywall for water intrusion issues on Lot 12 in the Oakridge project.
+    Please structure this information into CRM records.
+
+requirements:
+  expected_output_format: |
+    Return a JSON object with:
+    - "entities": list of CRM entities (Account, Contact, Case, Opportunity, etc.)
+    - "relations": relationships between entities
+    - "metadata": any helpful notes or rationale
+
+gold_ontology:
+  entities:
+    - type: "Account"
+      name: "ACME Construction"
+      role: "PrimaryCustomer"
+    - type: "Account"
+      name: "Skyline Drywall"
+      role: "Counterparty"
+    - type: "Case"
+      subject: "Construction defect - water intrusion on Lot 12 (Oakridge)"
+      status: "Open"
+      category: "Warranty / Defect"
+  relations:
+    - from: "Case"
+      to: "ACME Construction"
+      type: "PrimaryAccount"
+    - from: "Case"
+      to: "Skyline Drywall"
+      type: "Counterparty"
+
+metrics:
+  weights:
+    mapping_precision: 0.4
+    mapping_recall: 0.4
+    normalization_quality: 0.2
