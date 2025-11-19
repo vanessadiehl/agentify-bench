@@ -19,15 +19,15 @@ def main():
     args = parser.parse_args()
 
     root_agent = Agent(
-        name="debater",
+        name="crm_mapper",
         model="gemini-2.0-flash",
-        description="Participates in a debate.",
-        instruction="You are a professional debater.",
+        description="Maps legal cases to CRM entities and relationships.",
+        instruction="You are a CRM semantic mapping system. Extract CRM entities (Customer, Account, Interaction, Relationship, Case) and their relationships from legal case descriptions. Return a JSON object with 'entities' (list with entity_type and name/subject) and 'relationships' (list with from, type, to).",
     )
 
     agent_card = AgentCard(
-        name="debater",
-        description='Participates in a debate.',
+        name="crm_mapper",
+        description='Maps legal cases to CRM entities and relationships.',
         url=args.card_url or f'http://{args.host}:{args.port}/',
         version='1.0.0',
         default_input_modes=['text'],

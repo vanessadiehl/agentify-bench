@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel
 from typing import Literal
 
@@ -9,42 +8,59 @@ from a2a.types import (
 )
 
 
-class DebaterScore(BaseModel):
-    emotional_appeal: float
-    argument_clarity: float
-    argument_arrangement: float
-    relevance_to_topic: float
-    total_score: float
-
-class DebateEval(BaseModel):
-    pro_debater: DebaterScore
-    con_debater: DebaterScore
-    winner: Literal["pro_debater", "con_debater"]
-    reason: str
+class EntityMetrics(BaseModel):
+    precision: float
+    recall: float
+    f1: float
+    tp: int
+    fp: int
+    fn: int
 
 
-def debate_judge_agent_card(agent_name: str, card_url: str) -> AgentCard:
+class RelationshipMetrics(BaseModel):
+    precision: float
+    recall: float
+    f1: float
+    tp: int
+    fp: int
+    fn: int
+
+
+class TurnScore(BaseModel):
+    turn: int
+    entity_f1: float
+    relationship_f1: float
+    consistency: float | None
+
+
+class SemanticEvalResult(BaseModel):
+    per_turn_scores: list[TurnScore]
+    avg_entity_f1: float
+    avg_relationship_f1: float
+    avg_consistency: float | None
+    learning_trajectory: str
+
+
+def semantic_judge_agent_card(agent_name: str, card_url: str) -> AgentCard:
     skill = AgentSkill(
-        id='moderate_and_judge_debate',
-        name='Orchestrates and judges debate',
-        description='Orchestrate and judge a debate between two agents on a given topic.',
-        tags=['debate'],
+        id='evaluate_crm_mapping',
+        name='Evaluates CRM ontology mapping',
+        description='Evaluate how well agents map legal cases to CRM entities and relationships across multiple turns.',
+        tags=['crm', 'ontology', 'legal', 'multi-turn'],
         examples=["""
 {
   "participants": {
-    "pro_debater": "https://pro-debater.example.com:443",
-    "con_debater": "https://con-debater.example.org:8443"
+    "crm_mapper": "https://crm-mapper.example.com:443"
   },
   "config": {
-    "topic": "Should artificial intelligence be regulated?",
-    "num_rounds": 3
+    "episodes": ["scenarios/domain_adapt_crm/episodes/legal_to_crm.yml"]
   }
 }
 """]
     )
     agent_card = AgentCard(
         name=agent_name,
-        description='Orchestrate and judge a structured debate between pro and con agents on a given topic with multiple rounds of arguments.',
+        description='Evaluate CRM ontology mapping across multi-turn legal case analysis with entity, relationship, and consistency scoring.',
         url=card_url,
         version='1.0.0',
         default_input_modes=['text'],
