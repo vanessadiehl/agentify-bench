@@ -74,12 +74,12 @@ def _extract_pred_entities(agent_json: dict) -> set[tuple[str, str]]:
     return result
 
 
-def _extract_gold_entities(episode: dict) -> set[tuple[str, str]]:
+def _extract_gold_entities(turn_data: dict) -> set[tuple[str, str]]:
     """
-    Extract gold entities as (type, id_or_name) pairs from YAML.
+    Extract gold entities as (type, id_or_name) pairs from YAML turn.
     """
     result: set[tuple[str, str]] = set()
-    gold = (episode.get("gold_ontology") or {}).get("entities") or []
+    gold = (turn_data.get("gold_ontology") or {}).get("entities") or []
     for e in gold:
         etype = (e.get("type") or "").strip().lower()
         name = ""
@@ -87,6 +87,12 @@ def _extract_gold_entities(episode: dict) -> set[tuple[str, str]]:
             name = (e.get("name") or "").strip()
         elif etype == "case":
             name = (e.get("subject") or "").strip()
+        elif etype == "contact":
+            name = (e.get("name") or "").strip()
+        elif etype == "property":
+            name = (e.get("lot_number") or "").strip()
+        elif etype == "interaction":
+            name = (e.get("description") or "").strip()
         else:
             name = (e.get("name") or e.get("subject") or "").strip()
 
@@ -95,10 +101,44 @@ def _extract_gold_entities(episode: dict) -> set[tuple[str, str]]:
     return result
 
 
-def _compute_prf(gold: set[tuple[str, str]], pred: set[tuple[str, str]]) -> dict:
-    """Compute precision / recall / F1 for entity matching."""
+def _extract_pred_relationships(agent_json: dict) -> set[tuple[str, str, str]]:
+    """
+    Extract predicted relationships as (from, type, to) tuples from agent JSON.
+    """
+    result: set[tuple[str, str, str]] = set()
+    relationships = agent_json.get("relationships") or []
+    for r in relationships:
+        from_entity = (r.get("from") or "").strip().lower()
+        rel_type = (r.get("type") or "").strip().lower()
+        to_entity = (r.get("to") or "").strip().lower()
+        
+        if from_entity and rel_type and to_entity:
+            result.add((from_entity, rel_type, to_entity))
+    
+    return result
+
+
+def _extract_gold_relationships(turn_data: dict) -> set[tuple[str, str, str]]:
+    """
+    Extract gold relationships as (from, type, to) tuples from YAML turn.
+    """
+    result: set[tuple[str, str, str]] = set()
+    gold = (turn_data.get("gold_ontology") or {}).get("relationships") or []
+    for r in gold:
+        from_entity = (r.get("from") or "").strip().lower()
+        rel_type = (r.get("type") or "").strip().lower()
+        to_entity = (r.get("to") or "").strip().lower()
+        
+        if from_entity and rel_type and to_entity:
+            result.add((from_entity, rel_type, to_entity))
+    
+    return result
+
+
+def _compute_prf(gold: set[tuple], pred: set[tuple]) -> dict:
+    """Compute precision / recall / F1 for matching."""
     if not gold and not pred:
-        return {"precision": 1.0, "recall": 1.0, "f1": 1.0}
+        return {"precision": 1.0, "recall": 1.0, "f1": 1.0, "tp": 0, "fp": 0, "fn": 0}
 
     tp = len(gold & pred)
     fp = len(pred - gold)
@@ -123,7 +163,7 @@ def _compute_prf(gold: set[tuple[str, str]], pred: set[tuple[str, str]]) -> dict
 
 
 class SemanticJudge(GreenAgent):
-    """Green agent that evaluates CRM semantic mapping accuracy."""
+    """Green agent that evaluates CRM semantic mapping accuracy across multiple turns."""
     
     def __init__(self):
         self._required_roles = ["crm_mapper"]
@@ -160,7 +200,7 @@ class SemanticJudge(GreenAgent):
                 )
                 return
 
-            # 1) Load the first episode spec
+            # Load episode
             episode_path = episodes[0]
             logger.info(f"[Semantic] Loading episode spec from: {episode_path}")
 
@@ -174,11 +214,11 @@ class SemanticJudge(GreenAgent):
             await updater.update_status(
                 TaskState.working,
                 new_agent_text_message(
-                    f"Loaded episode id={ep_id}, title={ep_title}. Calling CRM mapper next..."
+                    f"Loaded episode id={ep_id}, title={ep_title}. Calling CRM mapper..."
                 ),
             )
 
-            # 2) Build prompt for the crm_mapper participant
+            # Get crm_mapper URL
             crm_agent_url = req.participants.get("crm_mapper")
             if not crm_agent_url:
                 msg = "Missing participant 'crm_mapper' in request.participants."
@@ -188,12 +228,30 @@ class SemanticJudge(GreenAgent):
                 )
                 return
 
-            user_message = (episode.get("task") or {}).get("user_message", "")
-            expected_format = (episode.get("requirements") or {}).get(
-                "expected_output_format", ""
-            )
+            # Get all turns
+            turns = episode.get("turns", [])
+            if not turns:
+                msg = "Episode has no turns defined."
+                logger.error(msg)
+                await updater.update_status(
+                    TaskState.errored, new_agent_text_message(msg)
+                )
+                return
 
-            prompt = f"""
+            all_turn_scores = []
+            prev_gold_relationships = set()
+
+            # LOOP through each turn
+            for turn_num, turn_data in enumerate(turns):
+                logger.info(f"[Semantic] Processing turn {turn_num + 1}/{len(turns)}")
+
+                # Build prompt for this turn
+                user_message = turn_data.get("user_message", "")
+                expected_format = (turn_data.get("requirements") or {}).get(
+                    "expected_output_format", ""
+                )
+
+                prompt = f"""
 You are a CRM semantic mapping agent.
 
 Task:
@@ -208,63 +266,113 @@ Expected output format:
 Please follow the expected JSON format as closely as possible.
 """
 
-            logger.info(
-                f"[Semantic] Sending prompt to crm_mapper at {crm_agent_url}"
-            )
-            agent_response = await self._tool_provider.talk_to_agent(
-                prompt,
-                str(crm_agent_url),
-                new_conversation=True,
-            )
-
-            logger.info(
-                f"[Semantic] Raw response from crm_mapper:\n{agent_response}"
-            )
-
-            await updater.update_status(
-                TaskState.working,
-                new_agent_text_message(
-                    f"Received response from crm_mapper (first 500 chars):\n{agent_response[:500]}"
-                ),
-            )
-
-            # 3) Try to parse the agent response as JSON and compute entity metrics
-            metrics = {}
-            pred_entities: set[tuple[str, str]] = set()
-            gold_entities: set[tuple[str, str]] = set()
-
-            try:
-                cleaned = _clean_json_block(agent_response)
-                logger.info(f"[Semantic] Cleaned agent JSON string:\n{cleaned[:500]}")
-                agent_json = json.loads(cleaned)
-                pred_entities = _extract_pred_entities(agent_json)
-                gold_entities = _extract_gold_entities(episode)
-                metrics = _compute_prf(gold_entities, pred_entities)
-                logger.info(
-                    f"[Semantic] Entity metrics: {metrics} | gold={gold_entities} | pred={pred_entities}"
+                # Call agent for this turn
+                logger.info(f"[Semantic] Sending Turn {turn_num + 1} prompt to crm_mapper")
+                agent_response = await self._tool_provider.talk_to_agent(
+                    prompt,
+                    str(crm_agent_url),
+                    new_conversation=True,
                 )
-            except Exception as e:
-                logger.exception(
-                    f"[Semantic] Failed to parse agent JSON or compute metrics: {e}"
-                )
-                metrics = {
-                    "error": str(e),
-                    "parsed_ok": False,
-                }
-            else:
-                metrics["parsed_ok"] = True
 
-            # 4) Build EvalResult with metrics and a preview of the response
+                logger.info(f"[Semantic] Raw response from Turn {turn_num + 1}:\n{agent_response}")
+
+                await updater.update_status(
+                    TaskState.working,
+                    new_agent_text_message(
+                        f"Received response from Turn {turn_num + 1} (first 300 chars):\n{agent_response[:300]}"
+                    ),
+                )
+
+                # Parse JSON and extract entities/relationships
+                try:
+                    cleaned = _clean_json_block(agent_response)
+                    agent_json = json.loads(cleaned)
+                    
+                    # Extract predicted entities and relationships
+                    pred_entities = _extract_pred_entities(agent_json)
+                    pred_relationships = _extract_pred_relationships(agent_json)
+                    
+                    # Extract gold entities and relationships for this turn
+                    gold_entities = _extract_gold_entities(turn_data)
+                    gold_relationships = _extract_gold_relationships(turn_data)
+                    
+                    # Compute metrics
+                    entity_metrics = _compute_prf(gold_entities, pred_entities)
+                    relationship_metrics = _compute_prf(gold_relationships, pred_relationships)
+                    
+                    # Compute consistency (how many old relationships are maintained?)
+                    consistency = 1.0
+                    if turn_num > 0:
+                        maintained = len(prev_gold_relationships & gold_relationships)
+                        if prev_gold_relationships:
+                            consistency = maintained / len(prev_gold_relationships)
+                        else:
+                            consistency = 1.0  # If no previous relationships, perfect consistency
+                    
+                    logger.info(
+                        f"[Semantic] Turn {turn_num + 1} metrics: "
+                        f"Entity F1={entity_metrics['f1']:.2f}, "
+                        f"Relationship F1={relationship_metrics['f1']:.2f}, "
+                        f"Consistency={consistency:.2f if turn_num > 0 else 'N/A'}"
+                    )
+
+                    # Store turn scores
+                    turn_score = {
+                        "turn": turn_num + 1,
+                        "entity_f1": entity_metrics["f1"],
+                        "relationship_f1": relationship_metrics["f1"],
+                        "consistency": consistency if turn_num > 0 else None,
+                        "entity_details": {
+                            "precision": entity_metrics["precision"],
+                            "recall": entity_metrics["recall"],
+                            "tp": entity_metrics["tp"],
+                            "fp": entity_metrics["fp"],
+                            "fn": entity_metrics["fn"],
+                        },
+                        "relationship_details": {
+                            "precision": relationship_metrics["precision"],
+                            "recall": relationship_metrics["recall"],
+                            "tp": relationship_metrics["tp"],
+                            "fp": relationship_metrics["fp"],
+                            "fn": relationship_metrics["fn"],
+                        },
+                    }
+                    all_turn_scores.append(turn_score)
+                    
+                    # Update for next turn's consistency check
+                    prev_gold_relationships = gold_relationships
+
+                except Exception as e:
+                    logger.exception(f"[Semantic] Failed to process Turn {turn_num + 1}: {e}")
+                    all_turn_scores.append({
+                        "turn": turn_num + 1,
+                        "error": str(e),
+                        "parsed_ok": False,
+                    })
+
+            # Compute aggregate metrics
+            entity_f1_scores = [s["entity_f1"] for s in all_turn_scores if "entity_f1" in s]
+            relationship_f1_scores = [s["relationship_f1"] for s in all_turn_scores if "relationship_f1" in s]
+            consistency_scores = [s["consistency"] for s in all_turn_scores if s.get("consistency") is not None]
+
+            avg_entity_f1 = sum(entity_f1_scores) / len(entity_f1_scores) if entity_f1_scores else 0.0
+            avg_relationship_f1 = sum(relationship_f1_scores) / len(relationship_f1_scores) if relationship_f1_scores else 0.0
+            avg_consistency = sum(consistency_scores) / len(consistency_scores) if consistency_scores else None
+
+            # Build final result
             result = EvalResult(
                 winner="n/a",
                 detail={
                     "episode_id": ep_id,
                     "episode_title": ep_title,
-                    "note": "Semantic benchmark; entity-level metrics computed from CRM agent response.",
-                    "agent_raw_response_preview": agent_response[:500],
-                    "gold_entities": list(sorted(gold_entities)),
-                    "pred_entities": list(sorted(pred_entities)),
-                    "entity_metrics": metrics,
+                    "note": "Multi-turn semantic benchmark with entity, relationship, and consistency scoring.",
+                    "per_turn_scores": all_turn_scores,
+                    "aggregate_metrics": {
+                        "avg_entity_f1": round(avg_entity_f1, 3),
+                        "avg_relationship_f1": round(avg_relationship_f1, 3),
+                        "avg_consistency": round(avg_consistency, 3) if avg_consistency else None,
+                        "num_turns": len(turns),
+                    },
                 },
             )
 
@@ -278,7 +386,10 @@ Please follow the expected JSON format as closely as possible.
             await updater.update_status(
                 TaskState.completed,
                 new_agent_text_message(
-                    f"Semantic evaluation completed for episode {ep_id}."
+                    f"Semantic evaluation completed for episode {ep_id} with {len(turns)} turns. "
+                    f"Avg Entity F1: {avg_entity_f1:.3f}, "
+                    f"Avg Relationship F1: {avg_relationship_f1:.3f}, "
+                    f"Avg Consistency: {avg_consistency:.3f if avg_consistency else 'N/A'}"
                 ),
             )
         finally:
