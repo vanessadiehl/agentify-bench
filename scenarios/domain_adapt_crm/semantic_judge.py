@@ -309,11 +309,13 @@ Please follow the expected JSON format as closely as possible.
                         else:
                             consistency = 1.0  # If no previous relationships, perfect consistency
                     
+                    # Format consistency string for logging
+                    consistency_str = f"{consistency:.2f}" if turn_num > 0 else "N/A"
                     logger.info(
                         f"[Semantic] Turn {turn_num + 1} metrics: "
                         f"Entity F1={entity_metrics['f1']:.2f}, "
                         f"Relationship F1={relationship_metrics['f1']:.2f}, "
-                        f"Consistency={consistency:.2f if turn_num > 0 else 'N/A'}"
+                        f"Consistency={consistency_str}"
                     )
 
                     # Store turn scores
@@ -359,6 +361,9 @@ Please follow the expected JSON format as closely as possible.
             avg_relationship_f1 = sum(relationship_f1_scores) / len(relationship_f1_scores) if relationship_f1_scores else 0.0
             avg_consistency = sum(consistency_scores) / len(consistency_scores) if consistency_scores else None
 
+            # Format consistency for final message
+            consistency_final = f"{avg_consistency:.3f}" if avg_consistency is not None else "N/A"
+
             # Build final result
             result = EvalResult(
                 winner="n/a",
@@ -389,7 +394,7 @@ Please follow the expected JSON format as closely as possible.
                     f"Semantic evaluation completed for episode {ep_id} with {len(turns)} turns. "
                     f"Avg Entity F1: {avg_entity_f1:.3f}, "
                     f"Avg Relationship F1: {avg_relationship_f1:.3f}, "
-                    f"Avg Consistency: {avg_consistency:.3f if avg_consistency else 'N/A'}"
+                    f"Avg Consistency: {consistency_final}"
                 ),
             )
         finally:
