@@ -1,21 +1,13 @@
-name = "agentify_domain_adapt_crm"
-display_name = "Agentify: Domain-Adaptive CRM Benchmark"
-description = """
-Multi-agent benchmark for testing domain-adaptive language understanding:
-can agents map Legal / business concepts into CRM entities, fields, and actions
-while staying consistent across turns?
-"""
 [green_agent]
 endpoint = "http://127.0.0.1:9009"
 cmd = "python scenarios/domain_adapt_crm/semantic_judge.py --host 127.0.0.1 --port 9009"
 
 [[participants]]
-role = "crm_semantic_system"
+role = "crm_mapper"
 endpoint = "http://127.0.0.1:9019"
 cmd = "python scenarios/domain_adapt_crm/semantic_white_baseline.py --host 127.0.0.1 --port 9019"
 
 [config]
 episodes = [
-  "scenarios/domain_adapt_crm/episodes/legal_to_crm.yml",
+  "scenarios/domain_adapt_crm/episodes/legal_to_crm.yml"
 ]
-

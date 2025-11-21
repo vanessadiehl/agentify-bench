@@ -309,11 +309,13 @@ Please follow the expected JSON format as closely as possible.
                         else:
                             consistency = 1.0  # If no previous relationships, perfect consistency
                     
+                    # Format consistency string for logging
+                    consistency_str = f"{consistency:.2f}" if turn_num > 0 else "N/A"
                     logger.info(
                         f"[Semantic] Turn {turn_num + 1} metrics: "
                         f"Entity F1={entity_metrics['f1']:.2f}, "
                         f"Relationship F1={relationship_metrics['f1']:.2f}, "
-                        f"Consistency={consistency:.2f if turn_num > 0 else 'N/A'}"
+                        f"Consistency={consistency_str}"
                     )
 
                     # Store turn scores
@@ -359,6 +361,9 @@ Please follow the expected JSON format as closely as possible.
             avg_relationship_f1 = sum(relationship_f1_scores) / len(relationship_f1_scores) if relationship_f1_scores else 0.0
             avg_consistency = sum(consistency_scores) / len(consistency_scores) if consistency_scores else None
 
+            # Format consistency for final message
+            consistency_final = f"{avg_consistency:.3f}" if avg_consistency is not None else "N/A"
+
             # Build final result
             result = EvalResult(
                 winner="n/a",
@@ -370,28 +375,39 @@ Please follow the expected JSON format as closely as possible.
                     "aggregate_metrics": {
                         "avg_entity_f1": round(avg_entity_f1, 3),
                         "avg_relationship_f1": round(avg_relationship_f1, 3),
-                        "avg_consistency": round(avg_consistency, 3) if avg_consistency else None,
+                        "avg_consistency": round(avg_consistency, 3) if avg_consistency is not None else None,
                         "num_turns": len(turns),
                     },
                 },
             )
 
-            await updater.add_artifact(
-                parts=[
-                    Part(root=TextPart(text=result.model_dump_json())),
-                ],
-                name="Result",
-            )
+            # Add artifact FIRST with error handling
+            try:
+                await updater.add_artifact(
+                    parts=[
+                        Part(root=TextPart(text=result.model_dump_json())),
+                    ],
+                    name="Result",
+                )
+                logger.info(f"[Semantic] Artifact added successfully")
+            except Exception as e:
+                logger.error(f"[Semantic] Failed to add artifact: {e}")
 
-            await updater.update_status(
-                TaskState.completed,
-                new_agent_text_message(
-                    f"Semantic evaluation completed for episode {ep_id} with {len(turns)} turns. "
-                    f"Avg Entity F1: {avg_entity_f1:.3f}, "
-                    f"Avg Relationship F1: {avg_relationship_f1:.3f}, "
-                    f"Avg Consistency: {avg_consistency:.3f if avg_consistency else 'N/A'}"
-                ),
-            )
+            # Then update status with error handling
+            try:
+                await updater.update_status(
+                    TaskState.completed,
+                    new_agent_text_message(
+                        f"Semantic evaluation completed for episode {ep_id} with {len(turns)} turns. "
+                        f"Avg Entity F1: {avg_entity_f1:.3f}, "
+                        f"Avg Relationship F1: {avg_relationship_f1:.3f}, "
+                        f"Avg Consistency: {consistency_final}"
+                    ),
+                )
+                logger.info(f"[Semantic] Status updated to completed")
+            except Exception as e:
+                logger.error(f"[Semantic] Failed to update status: {e}")
+
         finally:
             self._tool_provider.reset()
 

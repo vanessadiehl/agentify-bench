@@ -66,7 +66,11 @@ def print_parts(parts, task_state: str | None = None):
 
     print("\n".join(output) + "\n")
 
+# ADDED: Track if we've received artifacts
+artifacts_received = False
+
 async def event_consumer(event, card: AgentCard):
+    global artifacts_received
     match event:
         case Message() as msg:
             print_parts(msg.parts)
@@ -76,15 +80,26 @@ async def event_consumer(event, card: AgentCard):
             parts = status.message.parts if status.message else []
             print_parts(parts, status.state.value)
             if status.state.value == "completed":
-                print(task.artifacts)
+                if task.artifacts:
+                    print("[Status: artifacts]")
+                    for artifact in task.artifacts:
+                        print_parts(artifact.parts)
+                        artifacts_received = True
 
         case (task, TaskArtifactUpdateEvent() as artifact_event):
-            print_parts(artifact_event.artifact.parts, "Artifact update")
+            print("[Status: Artifact update]")
+            print_parts(artifact_event.artifact.parts)
+            artifacts_received = True
 
         case task, None:
             status = task.status
             parts = status.message.parts if status.message else []
             print_parts(parts, task.status.state.value)
+            if task.artifacts:
+                print("[Status: artifacts]")
+                for artifact in task.artifacts:
+                    print_parts(artifact.parts)
+                    artifacts_received = True
 
         case _:
             print("Unhandled event")
@@ -106,6 +121,9 @@ async def main():
 
     msg = req.model_dump_json()
     await send_message(msg, green_url, streaming=True, consumer=event_consumer)
+    
+    # ADDED: Wait a bit for any trailing artifacts
+    await asyncio.sleep(2)
 
 
 if __name__ == "__main__":
