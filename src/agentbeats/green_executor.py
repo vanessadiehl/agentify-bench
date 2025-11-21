@@ -65,7 +65,7 @@ class GreenExecutor(AgentExecutor):
 
         try:
             await self.agent.run_eval(req, updater)
-            await updater.complete()
+            # Don't call updater.complete() - run_eval handles task completion via update_status(TaskState.completed)
         except Exception as e:
             print(f"Agent error: {e}")
             await updater.failed(new_agent_text_message(f"Agent error: {e}", context_id=context.context_id))

@@ -18,7 +18,7 @@ from a2a.types import (
 )
 
 
-DEFAULT_TIMEOUT = 300
+DEFAULT_TIMEOUT = 600  # CHANGED: Increased from 300 to 600 seconds
 
 
 def create_message(*, role: Role = Role.user, text: str, context_id: str | None = None) -> Message:
@@ -41,7 +41,10 @@ def merge_parts(parts: list[Part]) -> str:
 
 async def send_message(message: str, base_url: str, context_id: str | None = None, streaming=False, consumer: Consumer | None = None):
     """Returns dict with context_id, response and status (if exists)"""
-    async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as httpx_client:
+    # CHANGED: Use a timeout object with separate read timeout for streaming
+    timeout = httpx.Timeout(30.0, read=600.0) if streaming else httpx.Timeout(DEFAULT_TIMEOUT)
+    
+    async with httpx.AsyncClient(timeout=timeout) as httpx_client:
         resolver = A2ACardResolver(httpx_client=httpx_client, base_url=base_url)
         agent_card = await resolver.get_agent_card()
         config = ClientConfig(
@@ -54,32 +57,33 @@ async def send_message(message: str, base_url: str, context_id: str | None = Non
             await client.add_event_consumer(consumer)
 
         outbound_msg = create_message(text=message, context_id=context_id)
-        last_event = None
         outputs = {
             "response": "",
             "context_id": None
         }
 
-        # if streaming == False, only one event is generated
-        async for event in client.send_message(outbound_msg):
-            last_event = event
+        # Process ALL events as they stream in
+        try:
+            async for event in client.send_message(outbound_msg):
+                match event:
+                    case Message() as msg:
+                        outputs["context_id"] = msg.context_id
+                        outputs["response"] += merge_parts(msg.parts)
 
-        match last_event:
-            case Message() as msg:
-                outputs["context_id"] = msg.context_id
-                outputs["response"] += merge_parts(msg.parts)
+                    case (task, update):
+                        outputs["context_id"] = task.context_id
+                        outputs["status"] = task.status.state.value
+                        msg = task.status.message
+                        if msg:
+                            outputs["response"] += merge_parts(msg.parts)
+                        if task.artifacts:
+                            for artifact in task.artifacts:
+                                outputs["response"] += merge_parts(artifact.parts)
 
-            case (task, update):
-                outputs["context_id"] = task.context_id
-                outputs["status"] = task.status.state.value
-                msg = task.status.message
-                if msg:
-                    outputs["response"] += merge_parts(msg.parts)
-                if task.artifacts:
-                    for artifact in task.artifacts:
-                        outputs["response"] += merge_parts(artifact.parts)
-
-            case _:
-                pass
+                    case _:
+                        pass
+        except Exception as e:
+            # If streaming fails, still return what we have
+            outputs["error"] = str(e)
 
         return outputs

@@ -375,28 +375,39 @@ Please follow the expected JSON format as closely as possible.
                     "aggregate_metrics": {
                         "avg_entity_f1": round(avg_entity_f1, 3),
                         "avg_relationship_f1": round(avg_relationship_f1, 3),
-                        "avg_consistency": round(avg_consistency, 3) if avg_consistency else None,
+                        "avg_consistency": round(avg_consistency, 3) if avg_consistency is not None else None,
                         "num_turns": len(turns),
                     },
                 },
             )
 
-            await updater.add_artifact(
-                parts=[
-                    Part(root=TextPart(text=result.model_dump_json())),
-                ],
-                name="Result",
-            )
+            # Add artifact FIRST with error handling
+            try:
+                await updater.add_artifact(
+                    parts=[
+                        Part(root=TextPart(text=result.model_dump_json())),
+                    ],
+                    name="Result",
+                )
+                logger.info(f"[Semantic] Artifact added successfully")
+            except Exception as e:
+                logger.error(f"[Semantic] Failed to add artifact: {e}")
 
-            await updater.update_status(
-                TaskState.completed,
-                new_agent_text_message(
-                    f"Semantic evaluation completed for episode {ep_id} with {len(turns)} turns. "
-                    f"Avg Entity F1: {avg_entity_f1:.3f}, "
-                    f"Avg Relationship F1: {avg_relationship_f1:.3f}, "
-                    f"Avg Consistency: {consistency_final}"
-                ),
-            )
+            # Then update status with error handling
+            try:
+                await updater.update_status(
+                    TaskState.completed,
+                    new_agent_text_message(
+                        f"Semantic evaluation completed for episode {ep_id} with {len(turns)} turns. "
+                        f"Avg Entity F1: {avg_entity_f1:.3f}, "
+                        f"Avg Relationship F1: {avg_relationship_f1:.3f}, "
+                        f"Avg Consistency: {consistency_final}"
+                    ),
+                )
+                logger.info(f"[Semantic] Status updated to completed")
+            except Exception as e:
+                logger.error(f"[Semantic] Failed to update status: {e}")
+
         finally:
             self._tool_provider.reset()
 
