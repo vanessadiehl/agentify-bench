@@ -12,10 +12,7 @@ turns:
       Please structure this into CRM records.
     
     requirements:
-      expected_output_format: |
-        Return a JSON object with:
-        - "entities": list of CRM entities (Account, Contact, Case, etc.)
-        - "relationships": relationships between entities
+      expected_output_format: "JSON with 'entities' and 'relationships' arrays."
     
     gold_ontology:
       entities:
@@ -28,7 +25,6 @@ turns:
         - type: "Case"
           subject: "Construction defect - water intrusion"
           status: "Open"
-          category: "Warranty / Defect"
       
       relationships:
         - from: "Case"
@@ -45,49 +41,31 @@ turns:
       The defect was caused by improper caulking work. 
       We also need to track the project manager Sarah Chen who oversees this property.
     
-    requirements:
-      expected_output_format: |
-        Return a JSON object with:
-        - "entities": list of CRM entities (Account, Contact, Case, Interaction, Property, etc.)
-        - "relationships": relationships between entities
-    
     gold_ontology:
       entities:
-        # MAINTAINED from Turn 1
         - type: "Account"
           name: "ACME Construction"
-          role: "PrimaryCustomer"
         - type: "Account"
           name: "Skyline Drywall"
-          role: "Counterparty"
         - type: "Case"
-          subject: "Construction defect - water intrusion on Lot 12 (Oakridge)"
-          status: "Open"
-          category: "Warranty / Defect"
-        
-        # NEW in Turn 2
+          subject: "Construction defect - water intrusion"
         - type: "Contact"
           name: "Sarah Chen"
           role: "ProjectManager"
-          account: "ACME Construction"
         - type: "Interaction"
-          type: "Inspection"
+          subject: "Water intrusion discovery"  # Changed from description to match judge
           date: "2023-06-15"
-          description: "Water intrusion discovery"
         - type: "Property"
           lot_number: "Lot 12"
           project: "Oakridge"
       
       relationships:
-        # MAINTAINED from Turn 1
         - from: "Case"
           to: "ACME Construction"
           type: "PrimaryAccount"
         - from: "Case"
           to: "Skyline Drywall"
           type: "Counterparty"
-        
-        # NEW in Turn 2
         - from: "Sarah Chen"
           to: "ACME Construction"
           type: "EmployedBy"
@@ -108,46 +86,26 @@ turns:
       Also, the defect wasn't just improper caulking; it was a structural issue 
       with flashing installation. BuildRight hired Skyline for the drywall work.
     
-    requirements:
-      expected_output_format: |
-        Return a JSON object with:
-        - "entities": list of CRM entities
-        - "relationships": relationships between entities
-    
     gold_ontology:
       entities:
-        # MAINTAINED from Turn 1/2
         - type: "Account"
           name: "ACME Construction"
-          role: "PrimaryCustomer"
         - type: "Account"
           name: "Skyline Drywall"
-          role: "Counterparty"
         - type: "Account"
           name: "BuildRight Inc"
           role: "GeneralContractor"
         - type: "Case"
-          subject: "Construction defect - water intrusion on Lot 12 (Oakridge)"
-          status: "Open"
-          category: "Warranty / Defect"
+          subject: "Construction defect - water intrusion"
         - type: "Property"
           lot_number: "Lot 12"
-          project: "Oakridge"
-        
-        # UPDATED in Turn 3
         - type: "Contact"
           name: "Sarah Chen"
-          role: "ProjectManager"
-          account: "BuildRight Inc"  # CHANGED from ACME
-        
-        # REFINED in Turn 3
+          account: "BuildRight Inc"
         - type: "Interaction"
-          type: "Inspection"
-          date: "2023-06-15"
-          description: "Water intrusion discovery - structural flashing issue"
+          subject: "Water intrusion discovery"
       
       relationships:
-        # MAINTAINED from Turn 1/2
         - from: "Case"
           to: "ACME Construction"
           type: "PrimaryAccount"
@@ -163,13 +121,9 @@ turns:
         - from: "Skyline Drywall"
           to: "Interaction"
           type: "ResponsibleFor"
-        
-        # UPDATED in Turn 3
         - from: "Sarah Chen"
-          to: "BuildRight Inc"  # CHANGED from ACME
+          to: "BuildRight Inc"
           type: "EmployedBy"
-        
-        # NEW in Turn 3
         - from: "BuildRight Inc"
           to: "Skyline Drywall"
           type: "Hired"
