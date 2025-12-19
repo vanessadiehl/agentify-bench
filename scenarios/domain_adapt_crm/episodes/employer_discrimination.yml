@@ -1,0 +1,222 @@
+id: "employment_discrimination_multiturn001"
+title: "Legal → CRM: Employment discrimination case (Multi-turn)"
+domains:
+  source: "Legal_Employment"
+  target: "CRM"
+
+turns:
+  - turn: 1
+    user_message: |
+      Our client, TechCore Inc., is being sued by former employee Marcus Johnson for alleged racial discrimination. 
+      The lawsuit claims wrongful termination and hostile work environment from 2022-2023. 
+      The case was filed in federal district court.
+    
+    requirements:
+      expected_output_format: |
+        Return a JSON object with:
+        - "entities": list of CRM entities (Account, Contact, Case, Property, Event, Interaction)
+        - "relationships": relationships between entities with from, to, and type fields
+    
+    gold_ontology:
+      entities:
+        - type: "Account"
+          name: "TechCore Inc"
+          role: "Defendant"
+        - type: "Contact"
+          name: "Marcus Johnson"
+          role: "Plaintiff"
+        - type: "Case"
+          subject: "Employment discrimination lawsuit"
+          status: "Active"
+          category: "Employment/Discrimination"
+        - type: "Property"
+          lot_number: "Federal District Court - Northern District"
+        - type: "Event"
+          description: "Wrongful termination claim"
+      
+      relationships:
+        - from: "Case"
+          to: "TechCore Inc"
+          type: "PrimaryAccount"
+        - from: "Case"
+          to: "Marcus Johnson"
+          type: "Counterparty"
+        - from: "Case"
+          to: "Federal District Court - Northern District"
+          type: "SubjectOfDispute"
+        - from: "Marcus Johnson"
+          to: "TechCore Inc"
+          type: "Affiliation"
+
+  - turn: 2
+    user_message: |
+      New information: Marcus Johnson was supervised by HR Director Jennifer Wong, who reports to CEO David Chen at TechCore Inc.
+      We've also discovered Marcus worked in the Engineering Department, and the hostile environment incidents occurred during team meetings on the 3rd floor offices.
+      A witness statement from colleague Patricia Rodriguez confirms the hostile conduct.
+    
+    requirements:
+      expected_output_format: |
+        Return a JSON object with:
+        - "entities": list of CRM entities with new details
+        - "relationships": all relationships from Turn 1 plus new ones
+    
+    gold_ontology:
+      entities:
+        - type: "Account"
+          name: "TechCore Inc"
+          role: "Defendant"
+        - type: "Contact"
+          name: "Marcus Johnson"
+          role: "Plaintiff"
+        - type: "Contact"
+          name: "Jennifer Wong"
+          role: "DirectSupervisor"
+        - type: "Contact"
+          name: "David Chen"
+          role: "CEO"
+        - type: "Contact"
+          name: "Patricia Rodriguez"
+          role: "Witness"
+        - type: "Case"
+          subject: "Employment discrimination lawsuit"
+          status: "Active"
+          category: "Employment/Discrimination"
+        - type: "Property"
+          lot_number: "Federal District Court - Northern District"
+        - type: "Property"
+          lot_number: "3rd Floor Offices - TechCore Inc"
+        - type: "Event"
+          description: "Wrongful termination claim"
+        - type: "Event"
+          description: "Hostile work environment during team meetings"
+        - type: "Interaction"
+          description: "Witness statement from Patricia Rodriguez"
+      
+      relationships:
+        # MAINTAINED from Turn 1
+        - from: "Case"
+          to: "TechCore Inc"
+          type: "PrimaryAccount"
+        - from: "Case"
+          to: "Marcus Johnson"
+          type: "Counterparty"
+        - from: "Case"
+          to: "Federal District Court - Northern District"
+          type: "SubjectOfDispute"
+        - from: "Marcus Johnson"
+          to: "TechCore Inc"
+          type: "Affiliation"
+        
+        # NEW in Turn 2
+        - from: "Jennifer Wong"
+          to: "TechCore Inc"
+          type: "Affiliation"
+        - from: "David Chen"
+          to: "TechCore Inc"
+          type: "Affiliation"
+        - from: "Jennifer Wong"
+          to: "Marcus Johnson"
+          type: "Affiliation"
+        - from: "Patricia Rodriguez"
+          to: "TechCore Inc"
+          type: "Affiliation"
+        - from: "Case"
+          to: "3rd Floor Offices - TechCore Inc"
+          type: "SubjectOfDispute"
+        - from: "Case"
+          to: "Hostile work environment during team meetings"
+          type: "TimelineEvent"
+        - from: "Case"
+          to: "Interaction"
+          type: "DiscoveredIssue"
+
+  - turn: 3
+    user_message: |
+      Correction: We discovered that Patricia Rodriguez was not actually a witness. 
+      Instead, David Chen was directly involved - he made the discriminatory comments in a March 2023 meeting. 
+      The actual witness is Robert Lee, Marcus's peer in Engineering.
+      The federal court assigned Judge Sarah Mitchell to oversee the case.
+    
+    requirements:
+      expected_output_format: |
+        Return a JSON object with:
+        - "entities": list of CRM entities with corrections
+        - "relationships": updated relationships reflecting corrections
+    
+    gold_ontology:
+      entities:
+        - type: "Account"
+          name: "TechCore Inc"
+          role: "Defendant"
+        - type: "Contact"
+          name: "Marcus Johnson"
+          role: "Plaintiff"
+        - type: "Contact"
+          name: "Jennifer Wong"
+          role: "DirectSupervisor"
+        - type: "Contact"
+          name: "David Chen"
+          role: "CEO"
+        - type: "Contact"
+          name: "Robert Lee"
+          role: "Witness"
+        - type: "Case"
+          subject: "Employment discrimination lawsuit"
+          status: "Active"
+          category: "Employment/Discrimination"
+          judge: "Judge Sarah Mitchell"
+        - type: "Property"
+          lot_number: "Federal District Court - Northern District"
+        - type: "Property"
+          lot_number: "3rd Floor Offices - TechCore Inc"
+        - type: "Event"
+          description: "Wrongful termination claim"
+        - type: "Event"
+          description: "Discriminatory comments by CEO in March 2023 meeting"
+        - type: "Interaction"
+          description: "Witness statement from Robert Lee"
+      
+      relationships:
+        # MAINTAINED from Turn 1-2
+        - from: "Case"
+          to: "TechCore Inc"
+          type: "PrimaryAccount"
+        - from: "Case"
+          to: "Marcus Johnson"
+          type: "Counterparty"
+        - from: "Case"
+          to: "Federal District Court - Northern District"
+          type: "SubjectOfDispute"
+        - from: "Marcus Johnson"
+          to: "TechCore Inc"
+          type: "Affiliation"
+        - from: "Jennifer Wong"
+          to: "TechCore Inc"
+          type: "Affiliation"
+        - from: "David Chen"
+          to: "TechCore Inc"
+          type: "Affiliation"
+        - from: "Jennifer Wong"
+          to: "Marcus Johnson"
+          type: "Affiliation"
+        - from: "Case"
+          to: "3rd Floor Offices - TechCore Inc"
+          type: "SubjectOfDispute"
+        
+        # DELETED from Turn 2
+        # Patricia Rodriguez → TechCore Inc (removed - not a witness)
+        # Patricia Rodriguez role (removed)
+        
+        # NEW in Turn 3
+        - from: "Robert Lee"
+          to: "TechCore Inc"
+          type: "Affiliation"
+        - from: "David Chen"
+          to: "Case"
+          type: "ResponsibleFor"
+        - from: "Case"
+          to: "Discriminatory comments by CEO in March 2023 meeting"
+          type: "TimelineEvent"
+        - from: "Case"
+          to: "Robert Lee"
+          type: "DiscoveredIssue"
