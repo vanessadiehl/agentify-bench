@@ -1,0 +1,227 @@
+id: "contract_breach_multiturn001"
+title: "Legal → CRM: Commercial contract breach (Multi-turn)"
+domains:
+  source: "Legal_Commercial"
+  target: "CRM"
+
+turns:
+  - turn: 1
+    user_message: |
+      GreenLeaf Supplies signed a supply agreement with BuildForce Contractors worth $500,000 for steel beam deliveries over 12 months.
+      BuildForce failed to deliver on three scheduled shipments in Q3 2023, causing project delays.
+      GreenLeaf is suing for breach of contract and requesting damages for the losses incurred.
+    
+    requirements:
+      expected_output_format: |
+        Return a JSON object with:
+        - "entities": list of CRM entities (Account, Contact, Case, Property, Event, Interaction)
+        - "relationships": relationships between entities with from, to, and type fields
+    
+    gold_ontology:
+      entities:
+        - type: "Account"
+          name: "GreenLeaf Supplies"
+          role: "Plaintiff"
+        - type: "Account"
+          name: "BuildForce Contractors"
+          role: "Defendant"
+        - type: "Case"
+          subject: "Commercial contract breach - steel supply agreement"
+          status: "Active"
+          category: "Contract/Breach"
+        - type: "Property"
+          lot_number: "Steel Beam Supply Agreement - $500,000"
+        - type: "Event"
+          description: "Missed delivery Q3 2023"
+      
+      relationships:
+        - from: "Case"
+          to: "GreenLeaf Supplies"
+          type: "PrimaryAccount"
+        - from: "Case"
+          to: "BuildForce Contractors"
+          type: "Counterparty"
+        - from: "Case"
+          to: "Steel Beam Supply Agreement - $500,000"
+          type: "SubjectOfDispute"
+        - from: "Case"
+          to: "Missed delivery Q3 2023"
+          type: "TimelineEvent"
+
+  - turn: 2
+    user_message: |
+      Additional details: The contract was negotiated by Michael Torres (GreenLeaf's Procurement Manager) and signed by Greg Stevens (BuildForce's Operations Director).
+      The delivery schedule was established by Jennifer Park, BuildForce's Supply Chain Lead.
+      Damages are estimated at $150,000 due to project shutdown costs and labor overhead.
+      A preliminary damages report was prepared by external auditor Adams & Associates.
+    
+    requirements:
+      expected_output_format: |
+        Return a JSON object with:
+        - "entities": list of CRM entities with new contacts and property details
+        - "relationships": all relationships from Turn 1 plus new ones
+    
+    gold_ontology:
+      entities:
+        - type: "Account"
+          name: "GreenLeaf Supplies"
+          role: "Plaintiff"
+        - type: "Account"
+          name: "BuildForce Contractors"
+          role: "Defendant"
+        - type: "Account"
+          name: "Adams & Associates"
+          role: "ThirdParty"
+        - type: "Contact"
+          name: "Michael Torres"
+          role: "ProcurementManager"
+        - type: "Contact"
+          name: "Greg Stevens"
+          role: "OperationsDirector"
+        - type: "Contact"
+          name: "Jennifer Park"
+          role: "SupplyChainLead"
+        - type: "Case"
+          subject: "Commercial contract breach - steel supply agreement"
+          status: "Active"
+          category: "Contract/Breach"
+          damages: "150000"
+        - type: "Property"
+          lot_number: "Steel Beam Supply Agreement - $500,000"
+        - type: "Property"
+          lot_number: "Damages Claim - $150,000"
+        - type: "Event"
+          description: "Missed delivery Q3 2023"
+        - type: "Interaction"
+          description: "Preliminary damages report from Adams & Associates"
+      
+      relationships:
+        # MAINTAINED from Turn 1
+        - from: "Case"
+          to: "GreenLeaf Supplies"
+          type: "PrimaryAccount"
+        - from: "Case"
+          to: "BuildForce Contractors"
+          type: "Counterparty"
+        - from: "Case"
+          to: "Steel Beam Supply Agreement - $500,000"
+          type: "SubjectOfDispute"
+        - from: "Case"
+          to: "Missed delivery Q3 2023"
+          type: "TimelineEvent"
+        
+        # NEW in Turn 2
+        - from: "Michael Torres"
+          to: "GreenLeaf Supplies"
+          type: "Affiliation"
+        - from: "Greg Stevens"
+          to: "BuildForce Contractors"
+          type: "Affiliation"
+        - from: "Jennifer Park"
+          to: "BuildForce Contractors"
+          type: "Affiliation"
+        - from: "Adams & Associates"
+          to: "Case"
+          type: "ResponsibleFor"
+        - from: "Case"
+          to: "Damages Claim - $150,000"
+          type: "SubjectOfDispute"
+        - from: "Case"
+          to: "Interaction"
+          type: "DiscoveredIssue"
+
+  - turn: 3
+    user_message: |
+      Update: Greg Stevens was recently promoted to VP of Operations and no longer involved in day-to-day contract management.
+      His replacement, Lisa Chen, will represent BuildForce going forward.
+      We also discovered that Jennifer Park had previously warned BuildForce management about supply chain capacity issues in a June 2023 email.
+      This warning changes the liability assessment - BuildForce proceeded with the contract despite known risks.
+      New damages estimate: $200,000 (revised upward due to negligence findings).
+    
+    requirements:
+      expected_output_format: |
+        Return a JSON object with:
+        - "entities": list of CRM entities with updates to personnel and damages
+        - "relationships": updated relationships reflecting personnel changes and new liability findings
+    
+    gold_ontology:
+      entities:
+        - type: "Account"
+          name: "GreenLeaf Supplies"
+          role: "Plaintiff"
+        - type: "Account"
+          name: "BuildForce Contractors"
+          role: "Defendant"
+        - type: "Account"
+          name: "Adams & Associates"
+          role: "ThirdParty"
+        - type: "Contact"
+          name: "Michael Torres"
+          role: "ProcurementManager"
+        - type: "Contact"
+          name: "Lisa Chen"
+          role: "OperationsDirector"
+        - type: "Contact"
+          name: "Jennifer Park"
+          role: "SupplyChainLead"
+        - type: "Case"
+          subject: "Commercial contract breach - steel supply agreement"
+          status: "Active"
+          category: "Contract/Breach"
+          damages: "200000"
+        - type: "Property"
+          lot_number: "Steel Beam Supply Agreement - $500,000"
+        - type: "Property"
+          lot_number: "Damages Claim - $200,000"
+        - type: "Event"
+          description: "Missed delivery Q3 2023"
+        - type: "Event"
+          description: "Supply chain capacity warning email June 2023"
+        - type: "Interaction"
+          description: "Preliminary damages report from Adams & Associates"
+        - type: "Interaction"
+          description: "Negligence finding - known risks proceeding"
+      
+      relationships:
+        # MAINTAINED from Turn 1-2
+        - from: "Case"
+          to: "GreenLeaf Supplies"
+          type: "PrimaryAccount"
+        - from: "Case"
+          to: "BuildForce Contractors"
+          type: "Counterparty"
+        - from: "Case"
+          to: "Steel Beam Supply Agreement - $500,000"
+          type: "SubjectOfDispute"
+        - from: "Case"
+          to: "Missed delivery Q3 2023"
+          type: "TimelineEvent"
+        - from: "Michael Torres"
+          to: "GreenLeaf Supplies"
+          type: "Affiliation"
+        - from: "Jennifer Park"
+          to: "BuildForce Contractors"
+          type: "Affiliation"
+        - from: "Adams & Associates"
+          to: "Case"
+          type: "ResponsibleFor"
+        
+        # DELETED from Turn 2
+        # Greg Stevens → BuildForce Contractors (removed - promoted away)
+        
+        # NEW in Turn 3
+        - from: "Lisa Chen"
+          to: "BuildForce Contractors"
+          type: "Affiliation"
+        - from: "Case"
+          to: "Damages Claim - $200,000"
+          type: "SubjectOfDispute"
+        - from: "Case"
+          to: "Supply chain capacity warning email June 2023"
+          type: "TimelineEvent"
+        - from: "Jennifer Park"
+          to: "Case"
+          type: "ResponsibleFor"
+        - from: "Case"
+          to: "Negligence finding - known risks proceeding"
+          type: "DiscoveredIssue"

@@ -9,5 +9,7 @@ cmd = "python scenarios/domain_adapt_crm/semantic_white_baseline.py --host 127.0
 
 [config]
 episodes = [
-  "scenarios/domain_adapt_crm/episodes/legal_to_crm.yml"
+  "scenarios/domain_adapt_crm/episodes/legal_to_crm.yml",
+  "scenarios/domain_adapt_crm/episodes/employment_discrimination.yml",
+  "scenarios/domain_adapt_crm/episodes/contract_breach.yml"
 ]
