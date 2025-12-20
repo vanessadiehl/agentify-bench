@@ -25,9 +25,9 @@ Episodes:
 3. Commercial Contract Breach - Tests financial property tracking and personnel transitions
 
 ## Scoring Dimensions:
--Entity F1: Can the agent extract correct entity types and names?
--Relationship F1: Can the agent map entities to correct relationship types?
--Persistence: Does the agent maintain previous relationships when the context changes?
+- Entity F1: Can the agent extract correct entity types and names?
+- Relationship F1: Can the agent map entities to correct relationship types?
+- Persistence: Does the agent maintain previous relationships when the context changes?
 
 # Quick Start
 ## Prerequisites
