@@ -1,41 +1,42 @@
-## Agentify Bench: Domain-Adaptive Language Understanding Benchmark
-
-Adapted from [AgentBeats](https://github.com/agentbeats/agentbeats)
+## Agentify-Bench: Multi-Turn Semantic Evaluation for Domain-Adaptive CRM Mapping
+This benchmark evaluates the AI agents' ability to map legal case descriptions to CRM ontology structures across multiple conversation turns.
 
 ## Overview
+AgentifyBench addresses a critical gap in AI agent evaluation: can agents correctly extract relationships in different domains?
+Existing benchmarks evaluate agents on isolated tasks; it is our understanding that real-world agents require:
+-Domain adaptation: understanding context is essential to agents extracting and mapping information in multidomain understanding.
+-Multi-turn consistency: Maintaining semantic understanding when context changes
+-Structural reasoning: Extracting entities and relationships, not relying on surface patterns.
 
-This repo is a playground for **AgentBeats-style green agents** built by **Team Agentify Bennch**.
+AgentifyBench tests all three by evaluating agents' ability to extract CRM entities (Account, Contact, Case, Property, Event, Interaction) and link to relationships from legal cases descriptions across 3 conversion turns in order to test true semantic eval. 
 
-Goal: Build and compare **multi-agent benchmarks** that focus on
-- **Domain-adaptive language understanding** (mapping concepts across CRM, Legal, Support, etc.)
-- **Standard A2A interfaces** so any compatible agent can plug in
-- Reproducible, leaderboard-style evaluation
+## The Problem
+While LLM-based agents are increasingly capable of extracting raw information, their precision remains a challenge. 
+- Legal and CRM teams require agents that can autonomously and accurately populate CRM fields directly from legal documentation.
+- Agents often struggle to maintain consistency when presented with corrections, updates, and new information.
+- Current benchmarks fail to measure agents' "staying power" in a conversation or its ability to adapt as the CRM/legal case progresses
 
-We reuse the core AgentBeats structure (`src/agentbeats/*`) and add our own scenarios under `scenarios/`.
 
----
+## Solution: Multi-turn Evaluation Framework
+Agentify-Bench utilizes a structured evaluation protocol consisting of three distinct episodes that mimic high-complexity legal-CRM workflows, each spanning three conversational turns. This approach allows for objective F1 weighting scoring of an agent's semantic reasoning. 
+Episodes:
+1. Construction Defect Case - Tests basic entity/relationship extraction and multi-turn persistence
+2. Employment Discrimination Case - Tests multi-party relationships and role updates
+3. Commercial Contract Breach - Tests financial property tracking and personnel transitions
 
-## Scenarios
+## Scoring Dimensions:
+-Entity F1: Can the agent extract correct entity types and names?
+-Relationship F1: Can the agent map entities to correct relationship types?
+-Persistence: Does the agent maintain previous relationships when the context changes?
 
-Right now the repo contains:
+# Quick Start
+## Prerequisites
+- Python 3.11+
+- Docker (optional, for containerized runs)
+- Google API key for Gemini API
 
-- `scenarios/debate/`  
-  - Original debate example from AgentBeats (sanity check / reference).
-- `scenarios/domain_adapt_crm/` *(Need to build)*  
-  - Our **Domain-Adaptive Language Understanding Benchmark**  
-  - Green agent: semantic “judge” that evaluates how well a white agent maps Legal → CRM ontology  
-  - White agent: baseline participant (can be swapped out for any A2A-compatible agent)
 
-As we build more, each scenario will live in its own folder with:
-- a green agent implementation,
-- one or more white agents,
-- and a `scenario.toml` config file.
-
----
-
-## Running Scenarios
-
-### 1. Debate (baseline sanity check)
+## Local Setup
 
 ```
 bash
@@ -45,9 +46,42 @@ cd agentify-bench
 uv sync
 cp sample.env .env      # add your GOOGLE_API_KEY, etc.
 
-uv run python src/agentbeats/run_scenario.py \
-  --scenario scenarios/debate/scenario.toml
 ```
+## Run Benchmark Locally
+
+```
+# Run benchmark on terminal:
+
+uv run agentbeats-run scenarios/domain_adapt_crm/scenario.toml
+
+```
+Optional: Start all three separately
+
+```
+# Terminal 1: Start green agent (judge)
+uv run python scenarios/domain_adapt_crm/semantic_judge.py --host 127.0.0.1 --port 9009
+
+# Terminal 2: Start purple agent (baseline mapper)
+uv run python scenarios/domain_adapt_crm/semantic_white_baseline.py --host 127.0.0.1 --port 9019
+
+# Terminal 3: Run benchmark
+uv run agentbeats-run scenarios/domain_adapt_crm/scenario.toml
+
+```
+
+## Run Benchmark With Docker
+
+```
+# Build image
+docker build -t agentify-bench:latest .
+
+# Run benchmark
+docker run -e GOOGLE_API_KEY="your-api-key" agentify-bench:latest
+
+```
+
+---
+
 
 ## Project Structure
 ```
@@ -68,20 +102,4 @@ scenarios/
    ├─ debater.py               # debater agent (Google ADK)
    └─ scenario.toml            # config for the debate example
 ```
-
-Instructions:
-1. Clone (or fork) the repo:
-```
-git clone https://github.com/your-team/agentify-bench.git`
-cd agentify-bench
-```
-2. Install dependencies
-```
-uv sync
-```
-3. Set environment variables
-```
-cp sample.env .env
-```
-Add your Google API key to the .env file
 
