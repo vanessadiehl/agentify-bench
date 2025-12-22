@@ -109,4 +109,5 @@ scenarios/                     # reference implementation, debate style evaluato
     ├── semantic_judge.py          # baseline CRM mapper
     └── semantic_white_baseline.py # green agent - evaluates CRM mapper
 ```
-
+## Acknowledgments
+Built on Google's A2A protocol and AgentBeats framework. Special thanks to the Berkeley RDI team for the competition structure.
