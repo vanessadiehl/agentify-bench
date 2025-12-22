@@ -4,9 +4,9 @@ This benchmark evaluates the AI agents' ability to map legal case descriptions t
 ## Overview
 AgentifyBench addresses a critical gap in AI agent evaluation: can agents correctly extract relationships in different domains?
 Existing benchmarks evaluate agents on isolated tasks; it is our understanding that real-world agents require:
--Domain adaptation: understanding context is essential to agents extracting and mapping information in multidomain understanding.
--Multi-turn consistency: Maintaining semantic understanding when context changes
--Structural reasoning: Extracting entities and relationships, not relying on surface patterns.
+- Domain adaptation: understanding context is essential to agents extracting and mapping information in multidomain understanding.
+- Multi-turn consistency: Maintaining semantic understanding when context changes
+- Structural reasoning: Extracting entities and relationships, not relying on surface patterns.
 
 AgentifyBench tests all three by evaluating agents' ability to extract CRM entities (Account, Contact, Case, Property, Event, Interaction) and link to relationships from legal cases descriptions across 3 conversion turns in order to test true semantic eval. 
 
