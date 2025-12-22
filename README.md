@@ -94,12 +94,19 @@ src/
    ├─ client_cli.py            # CLI client to start assessment
    └─ run_scenario.py          # run agents and start assessment
 
-scenarios/
-└─ debate/                     # implementation of the debate example
-   ├─ debate_judge.py          # green agent impl using the official A2A SDK
-   ├─ adk_debate_judge.py      # alternative green agent impl using Google ADK
-   ├─ debate_judge_common.py   # models and utils shared by above impls
-   ├─ debater.py               # debater agent (Google ADK)
-   └─ scenario.toml            # config for the debate example
+scenarios/                     # reference implementation, debate style evaluator
+├── debate/
+│   ├── adk_debate_judge.py
+│   ├── debate_judge_common.py
+│   ├── debate_judge.py
+│   ├── debater.py
+│   └── scenario.toml
+│
+└── domain_adapt_crm/              # benchmark    
+    ├── episodes/                  # test cases
+    ├── scenario.toml              # orchestrate green and purple agents  
+    ├── semantic_judge_common.py   # shared models
+    ├── semantic_judge.py          # baseline CRM mapper
+    └── semantic_white_baseline.py # green agent - evaluates CRM mapper
 ```
 
