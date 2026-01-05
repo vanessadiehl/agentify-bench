@@ -1,0 +1,7 @@
+warning: The `tool.uv.dev-dependencies` field (used in `pyproject.toml`) is deprecated and will be removed in a future release; use `dependency-groups.dev` instead
+Starting crm_mapper at 127.0.0.1:9019
+Starting green agent at 127.0.0.1:9009
+Waiting for 2 agent(s) to be ready...
+Agents started. Press Ctrl+C to stop.
+
+Shutting down...
