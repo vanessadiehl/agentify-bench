@@ -8,7 +8,7 @@ Existing benchmarks evaluate agents on isolated tasks; it is our understanding t
 - Multi-turn consistency: Maintaining semantic understanding when context changes
 - Structural reasoning: Extracting entities and relationships, not relying on surface patterns.
 
-AgentifyBench tests all three by evaluating agents' ability to extract CRM entities (Account, Contact, Case, Property, Event, Interaction) and link to relationships from legal cases descriptions across 3 conversion turns in order to test true semantic eval. 
+AgentifyBench tests all three by evaluating agents' ability to extract CRM entities (Account, Contact, Case, Property, Event, Interaction) and link to relationships from legal case descriptions across 3 conversation turns to test true semantic eval. 
 
 ## The Problem
 While LLM-based agents are increasingly capable of extracting raw information, their precision remains a challenge. 
@@ -72,11 +72,13 @@ uv run agentbeats-run scenarios/domain_adapt_crm/scenario.toml
 ## Run Benchmark With Docker
 
 ```
-# Build image
-docker build -t agentify-bench:latest .
-
-# Run benchmark
-docker run -e GOOGLE_API_KEY="your-api-key" agentify-bench:latest
+# Build and Run Green Agent
+   docker build -f Dockerfile.green -t agentify-bench-green:latest .
+   docker run -e GOOGLE_API_KEY="your-key" agentify-bench-green:latest
+   
+   # Build and Run Purple Agent
+   docker build -f Dockerfile.purple -t agentify-bench-purple:latest .
+   docker run -e GOOGLE_API_KEY="your-key" agentify-bench-purple:latest
 
 ```
 
@@ -94,7 +96,7 @@ src/
    ├─ client_cli.py            # CLI client to start assessment
    └─ run_scenario.py          # run agents and start assessment
 
-scenarios/                     # reference implementation, debate style evaluator
+scenarios/
 ├── debate/
 │   ├── adk_debate_judge.py
 │   ├── debate_judge_common.py
@@ -102,12 +104,12 @@ scenarios/                     # reference implementation, debate style evaluato
 │   ├── debater.py
 │   └── scenario.toml
 │
-└── domain_adapt_crm/              # benchmark    
-    ├── episodes/                  # test cases
+└── domain_adapt_crm/
+    ├── episodes/                  # test cases (3 legal domains)
     ├── scenario.toml              # orchestrate green and purple agents  
     ├── semantic_judge_common.py   # shared models
-    ├── semantic_judge.py          # baseline CRM mapper
-    └── semantic_white_baseline.py # green agent - evaluates CRM mapper
+    ├── semantic_judge.py          # green agent - evaluates CRM mapping
+    └── semantic_white_baseline.py # purple agent - baseline CRM mapper
 ```
 ## Acknowledgments
 Built on Google's A2A protocol and AgentBeats framework. Special thanks to the Berkeley RDI team for the competition structure.
