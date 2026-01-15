@@ -32,53 +32,87 @@ Episodes:
 # Quick Start
 ## Prerequisites
 - Python 3.11+
-- Docker (optional, for containerized runs)
+- Docker 
 - Google API key for Gemini API
 
 
-## Local Setup
-
-```
-bash
+## Run Benchmark With Docker
+```bash
 git clone https://github.com/your-team/agentify-bench.git
-cd agentify-bench
-
-uv sync
-cp sample.env .env      # add your GOOGLE_API_KEY, etc.
-
 ```
+
+### Terminal 1: Build and Run Green Agent (Evaluator)
+```bash
+cd agentify-bench
+export GOOGLE_API_KEY="your-actual-key"
+docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.green -t vanessa939/agentify-bench-green:latest --push .
+docker run -e GOOGLE_API_KEY=$GOOGLE_API_KEY vanessa939/agentify-bench-green:latest
+```
+
+Wait for "Application startup complete" message.
+
+### Terminal 2 (another tab): Build and Run Purple Agent (Baseline Mapper)
+```bash
+cd agentify-bench
+export GOOGLE_API_KEY="your-actual-key"
+docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.purple -t vanessa939/agentify-bench-purple:latest --push .
+docker run -e GOOGLE_API_KEY=$GOOGLE_API_KEY vanessa939/agentify-bench-purple:latest
+```
+
+Wait for "Application startup complete" message.
+
+### Terminal 3(another tab): Run Benchmark
+```bash
+cd agentify-bench
+export GOOGLE_API_KEY="your-actual-key"
+uv run agentbeats-run scenarios/domain_adapt_crm/scenario.toml
+```
+
+This runs all 3 episodes with both agents and generates results.
+
+
+## Local Setup
+```bash
+git clone https://github.com/your-username/agentify-bench.git
+cd agentify-bench
+uv sync
+cp sample.env .env
+# Edit .env and add your GOOGLE_API_KEY
+```
+
 ## Run Benchmark Locally
 
-```
-# Run benchmark on terminal:
-
+### Quick Start (Recommended)
+```bash
+export GOOGLE_API_KEY="your-actual-key"
 uv run agentbeats-run scenarios/domain_adapt_crm/scenario.toml
-
 ```
-Optional: Start all three separately
 
-```
-# Terminal 1: Start green agent (judge)
+This runs all 3 episodes automatically.
+
+### Manual Setup (Optional)
+
+If you want to run agents separately:
+
+**Terminal 1: Green Agent (Evaluator)**
+```bash
+cd agentify-bench
+export GOOGLE_API_KEY="your-actual-key"
 uv run python scenarios/domain_adapt_crm/semantic_judge.py --host 127.0.0.1 --port 9009
+```
 
-# Terminal 2: Start purple agent (baseline mapper)
+**Terminal 2: Purple Agent (Baseline Mapper)**
+```bash
+cd agentify-bench
+export GOOGLE_API_KEY="your-actual-key"
 uv run python scenarios/domain_adapt_crm/semantic_white_baseline.py --host 127.0.0.1 --port 9019
+```
 
-# Terminal 3: Run benchmark
+**Terminal 3: Run Benchmark**
+```bash
+cd agentify-bench
+export GOOGLE_API_KEY="your-actual-key"
 uv run agentbeats-run scenarios/domain_adapt_crm/scenario.toml
-
-```
-
-## Run Benchmark With Docker
-
-```
-# Build and Run Green Agent
-docker buildx build --platform linux/amd64 -f Dockerfile.green -t vanessa939/agentify-bench-green:latest --push .
-docker run -e GOOGLE_API_KEY="your-key" vanessa939/agentify-bench-green:latest
-
-# Build and Run Purple Agent
-docker buildx build --platform linux/amd64 -f Dockerfile.purple -t vanessa939/agentify-bench-purple:latest --push .
-docker run -e GOOGLE_API_KEY="your-key" vanessa939/agentify-bench-purple:latest
 ```
 
 ---
