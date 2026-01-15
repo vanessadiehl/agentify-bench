@@ -73,13 +73,12 @@ uv run agentbeats-run scenarios/domain_adapt_crm/scenario.toml
 
 ```
 # Build and Run Green Agent
-   docker build -f Dockerfile.green -t agentify-bench-green:latest .
-   docker run -e GOOGLE_API_KEY="your-key" agentify-bench-green:latest
-   
-   # Build and Run Purple Agent
-   docker build -f Dockerfile.purple -t agentify-bench-purple:latest .
-   docker run -e GOOGLE_API_KEY="your-key" agentify-bench-purple:latest
+docker buildx build --platform linux/amd64 -f Dockerfile.green -t vanessa939/agentify-bench-green:latest --push .
+docker run -e GOOGLE_API_KEY="your-key" vanessa939/agentify-bench-green:latest
 
+# Build and Run Purple Agent
+docker buildx build --platform linux/amd64 -f Dockerfile.purple -t vanessa939/agentify-bench-purple:latest --push .
+docker run -e GOOGLE_API_KEY="your-key" vanessa939/agentify-bench-purple:latest
 ```
 
 ---
